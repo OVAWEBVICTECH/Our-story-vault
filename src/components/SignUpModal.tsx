@@ -191,6 +191,30 @@ export const SignUpModal: React.FC<SignUpModalProps> = ({
           </div>
         </div>
 
+        {/* System Admin Quick Access Pill in Sign In Mode */}
+        {mode === 'signin' && (
+          <div className="mb-4 p-2.5 rounded-xl bg-slate-900/90 border border-rose-500/30 text-rose-200 text-xs flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5 overflow-hidden">
+              <Sparkles className="w-3.5 h-3.5 text-amber-300 shrink-0 animate-pulse" />
+              <span className="truncate">System Admin: <code className="text-amber-300 font-bold">admin@storyvault.com</code></span>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setFormData({
+                  ...formData,
+                  email: 'admin@storyvault.com',
+                  password: 'Admin@storyvault',
+                });
+                setErrors({});
+              }}
+              className="px-2.5 py-1 rounded-lg bg-rose-500/30 hover:bg-rose-500 text-white text-[10px] font-bold tracking-wider uppercase border border-rose-400/40 transition-colors shrink-0 cursor-pointer"
+            >
+              Auto Fill Admin
+            </button>
+          </div>
+        )}
+
         {/* General Error Banner */}
         {generalError && (
           <div className="mb-4 p-3 rounded-xl bg-red-500/20 border border-red-500/40 text-red-200 text-xs flex items-center gap-2">

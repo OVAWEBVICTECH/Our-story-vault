@@ -13,6 +13,7 @@ import { MediaLightbox } from './components/MediaLightbox.js';
 import { LoveLetterEnvelope } from './components/LoveLetterEnvelope.js';
 import { ReplySection } from './components/ReplySection.js';
 import { AdminDashboard } from './components/AdminDashboard.js';
+import { MainAdminDashboard } from './components/MainAdminDashboard.js';
 import { LandingPage } from './components/LandingPage.js';
 import { SignUpModal, SignUpFormData } from './components/SignUpModal.js';
 
@@ -31,7 +32,7 @@ export default function App() {
   });
 
   const [memories, setMemories] = useState<Memory[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Security Lock & Audio Autoplay
@@ -43,6 +44,7 @@ export default function App() {
   // Modals & Active Items
   const [activeLightboxMemory, setActiveLightboxMemory] = useState<Memory | null>(null);
   const [showAdminDashboard, setShowAdminDashboard] = useState(false);
+  const [showMainAdminDashboard, setShowMainAdminDashboard] = useState(false);
   const [showSignUpModal, setShowSignUpModal] = useState(false);
 
   useEffect(() => {
@@ -50,7 +52,6 @@ export default function App() {
   }, []);
 
   const fetchVaultData = async () => {
-    setIsLoading(true);
     setError(null);
     try {
       const res = await fetch('/api/vault/our-story');
@@ -127,6 +128,12 @@ export default function App() {
       });
       const data = await res.json();
       if (res.ok && data.success) {
+        if (data.isAdmin) {
+          setShowMainAdminDashboard(true);
+          setShowSignUpModal(false);
+          return true;
+        }
+
         if (data.settings) {
           setSettings(data.settings);
         }
@@ -349,6 +356,16 @@ export default function App() {
               setShowPasscodeGate(false);
               setShowSignUpModal(true);
             }}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Main System Admin Dashboard Modal */}
+      <AnimatePresence>
+        {showMainAdminDashboard && (
+          <MainAdminDashboard
+            onClose={() => setShowMainAdminDashboard(false)}
+            onRefreshApp={fetchVaultData}
           />
         )}
       </AnimatePresence>

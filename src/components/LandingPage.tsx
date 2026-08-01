@@ -85,7 +85,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               className="px-3.5 sm:px-5 py-2.5 rounded-2xl bg-gradient-to-r from-rose-500 via-pink-500 to-rose-600 hover:from-rose-600 hover:to-pink-600 text-white text-xs sm:text-sm font-bold shadow-lg shadow-rose-500/30 transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 border border-rose-300/30"
             >
               <PlusCircle className="w-4 h-4 text-amber-300" />
-              <span>Admin Studio</span>
+              <span>Create</span>
             </button>
           </div>
         </div>

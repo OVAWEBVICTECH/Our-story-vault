@@ -20,12 +20,23 @@ export interface UserAccount {
   createdAt: string;
 }
 
+export interface AdminCredentials {
+  email: string;
+  password: string;
+}
+
 interface DatabaseSchema {
   settings: VaultSettings;
   memories: Memory[];
   replies: Reply[];
   users: UserAccount[];
+  adminCredentials?: AdminCredentials;
 }
+
+const DEFAULT_ADMIN: AdminCredentials = {
+  email: 'admin@storyvault.com',
+  password: 'Admin@storyvault',
+};
 
 const DEFAULT_SETTINGS: VaultSettings = {
   vaultSlug: 'our-story',
@@ -173,6 +184,9 @@ class VaultDatabase {
         if (!parsed.users) {
           parsed.users = [];
         }
+        if (!parsed.adminCredentials) {
+          parsed.adminCredentials = DEFAULT_ADMIN;
+        }
         return parsed;
       }
     } catch (err) {
@@ -184,6 +198,7 @@ class VaultDatabase {
       memories: DEFAULT_MEMORIES,
       replies: DEFAULT_REPLIES,
       users: [],
+      adminCredentials: DEFAULT_ADMIN,
     };
     this.saveData(initialData);
     return initialData;
@@ -327,6 +342,27 @@ class VaultDatabase {
       return this.data.users[userIdx];
     }
     return undefined;
+  }
+
+  // Admin Credentials methods
+  public getAdminCredentials(): AdminCredentials {
+    return this.data.adminCredentials || DEFAULT_ADMIN;
+  }
+
+  public updateAdminCredentials(credentials: Partial<AdminCredentials>): AdminCredentials {
+    const current = this.getAdminCredentials();
+    this.data.adminCredentials = {
+      email: credentials.email ? credentials.email.toLowerCase().trim() : current.email,
+      password: credentials.password ? credentials.password : current.password,
+    };
+    this.saveData(this.data);
+    return this.data.adminCredentials;
+  }
+
+  public verifyAdminCredentials(email: string, password: string): boolean {
+    const creds = this.getAdminCredentials();
+    const normalizedEmail = email.toLowerCase().trim();
+    return creds.email.toLowerCase().trim() === normalizedEmail && creds.password === password;
   }
 }
 

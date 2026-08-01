@@ -88,6 +88,23 @@ app.post('/api/auth/signin', (req, res) => {
     return res.status(400).json({ error: 'Email and password are required' });
   }
 
+  // First check if signing in with system admin credentials
+  if (db.verifyAdminCredentials(email, password)) {
+    const adminCreds = db.getAdminCredentials();
+    return res.json({
+      success: true,
+      isAdmin: true,
+      user: {
+        id: 'admin-1',
+        email: adminCreds.email,
+        creatorName: 'System Admin',
+        recipientName: 'Story Vault Admin',
+        role: 'admin',
+      },
+      settings: db.getSettings(),
+    });
+  }
+
   const user = db.findUserByEmail(email);
   if (!user || user.password !== password) {
     return res.status(401).json({ error: 'Invalid email or password' });
@@ -105,7 +122,12 @@ app.post('/api/auth/signin', (req, res) => {
     subtitle: `For my love, ${user.recipientName}`,
   });
 
-  res.json({ success: true, user: { id: user.id, email: user.email, creatorName: user.creatorName, recipientName: user.recipientName }, settings });
+  res.json({
+    success: true,
+    isAdmin: false,
+    user: { id: user.id, email: user.email, creatorName: user.creatorName, recipientName: user.recipientName },
+    settings,
+  });
 });
 
 // =========================================
@@ -275,6 +297,37 @@ app.put('/api/admin/users/:id', (req, res) => {
   res.json({ success: true, user: updatedUser, settings: updatedSettings });
 });
 
+// Get System Admin credentials (email only)
+app.get('/api/admin/credentials', (req, res) => {
+  const creds = db.getAdminCredentials();
+  res.json({ email: creds.email });
+});
+
+// Update System Admin credentials (email and password)
+app.put('/api/admin/credentials', (req, res) => {
+  const { email, password, currentPassword } = req.body;
+
+  const currentCreds = db.getAdminCredentials();
+  if (currentPassword && currentPassword !== currentCreds.password) {
+    return res.status(401).json({ error: 'Current password is incorrect' });
+  }
+
+  if (email && (!email.includes('@') || email.trim().length < 4)) {
+    return res.status(400).json({ error: 'Valid email address is required' });
+  }
+
+  if (password && password.trim().length < 6) {
+    return res.status(400).json({ error: 'New password must be at least 6 characters' });
+  }
+
+  const updated = db.updateAdminCredentials({
+    email,
+    password,
+  });
+
+  res.json({ success: true, email: updated.email });
+});
+
 // Helper to generate wax seal love letter using Gemini AI based on occasion
 async function generateLoveLetterForOccasion(
   occasionTitle: string = "National Girlfriend's Day",
@@ -321,23 +374,31 @@ Return JSON format:
   "body": "Full love letter text"
 }`;
 
-    const response = await ai.models.generateContent({
+    // Fast 1000ms timeout race to prevent delay bugs when Gemini API is slow
+    const aiPromise = ai.models.generateContent({
       model: 'gemini-3.6-flash',
       contents: prompt,
       config: {
         responseMimeType: 'application/json',
       },
+    }).then((response) => {
+      if (response.text) {
+        const parsed = JSON.parse(response.text);
+        if (parsed.body) {
+          return {
+            title: parsed.title || defaultTitle,
+            body: parsed.body,
+          };
+        }
+      }
+      return { title: defaultTitle, body: defaultBody };
     });
 
-    if (response.text) {
-      const parsed = JSON.parse(response.text);
-      if (parsed.body) {
-        return {
-          title: parsed.title || defaultTitle,
-          body: parsed.body,
-        };
-      }
-    }
+    const timeoutPromise = new Promise<{ title: string; body: string }>((resolve) =>
+      setTimeout(() => resolve({ title: defaultTitle, body: defaultBody }), 1000)
+    );
+
+    return await Promise.race([aiPromise, timeoutPromise]);
   } catch (err) {
     console.error('Failed to auto-generate AI love letter:', err);
   }
