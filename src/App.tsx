@@ -195,6 +195,8 @@ export default function App() {
           onCreateVault={handleCreateVault}
           recipientName={settings.recipientName}
           creatorName={settings.creatorName}
+          occasionTitle={settings.occasionTitle}
+          occasionDay={settings.occasionDay}
         />
       ) : (
         <>
