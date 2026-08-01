@@ -29,6 +29,86 @@ function getGeminiClient() {
 }
 
 // =========================================
+// AUTHENTICATION API ENDPOINTS
+// =========================================
+
+// Sign Up
+app.post('/api/auth/signup', (req, res) => {
+  const {
+    email,
+    password,
+    creatorName,
+    recipientName,
+    creatorGender,
+    partnerGender,
+    relationshipStartDate,
+    passcode,
+  } = req.body;
+
+  if (!email || !email.includes('@')) {
+    return res.status(400).json({ error: 'Valid email is required' });
+  }
+  if (!password || password.length < 6) {
+    return res.status(400).json({ error: 'Password must be at least 6 characters' });
+  }
+
+  const user = db.registerUser({
+    email,
+    password,
+    creatorName: creatorName || 'Alex',
+    recipientName: recipientName || 'Elena',
+    creatorGender: creatorGender || 'Male',
+    partnerGender: partnerGender || 'Female',
+    relationshipStartDate: relationshipStartDate || new Date().toISOString().split('T')[0],
+    passcode: passcode || '0801',
+  });
+
+  // Also update default vault settings
+  const updatedSettings = db.updateSettings({
+    creatorName: user.creatorName,
+    recipientName: user.recipientName,
+    creatorGender: user.creatorGender,
+    partnerGender: user.partnerGender,
+    relationshipStartDate: user.relationshipStartDate,
+    passcode: user.passcode,
+    vaultTitle: `${user.recipientName} & ${user.creatorName}'s Vault`,
+    subtitle: `For my love, ${user.recipientName}`,
+    loveLetterTitle: `To My Forever & Always, ${user.recipientName} ❤️`,
+    loveLetterBody: `${user.recipientName}, looking back at all the memories we've built together fills my heart with so much warmth. From quiet coffee mornings to starry late-night talks, every moment with you is a gift I cherish deeply.\n\nHappy National Girlfriend's Day, my love. Here's to endless more chapters of our story.`,
+  });
+
+  res.json({ success: true, user: { id: user.id, email: user.email, creatorName: user.creatorName, recipientName: user.recipientName }, settings: updatedSettings });
+});
+
+// Sign In
+app.post('/api/auth/signin', (req, res) => {
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    return res.status(400).json({ error: 'Email and password are required' });
+  }
+
+  const user = db.findUserByEmail(email);
+  if (!user || user.password !== password) {
+    return res.status(401).json({ error: 'Invalid email or password' });
+  }
+
+  // Load vault settings for user
+  const settings = db.updateSettings({
+    creatorName: user.creatorName,
+    recipientName: user.recipientName,
+    creatorGender: user.creatorGender,
+    partnerGender: user.partnerGender,
+    relationshipStartDate: user.relationshipStartDate,
+    passcode: user.passcode,
+    vaultTitle: `${user.recipientName} & ${user.creatorName}'s Vault`,
+    subtitle: `For my love, ${user.recipientName}`,
+  });
+
+  res.json({ success: true, user: { id: user.id, email: user.email, creatorName: user.creatorName, recipientName: user.recipientName }, settings });
+});
+
+// =========================================
 // PUBLIC VAULT API ENDPOINTS
 // =========================================
 

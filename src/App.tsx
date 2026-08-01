@@ -98,31 +98,17 @@ export default function App() {
 
   const handleSignUpSubmit = async (formData: SignUpFormData) => {
     try {
-      const updatedSettings: Partial<VaultSettings> = {
-        ...settings,
-        creatorName: formData.creatorName,
-        recipientName: formData.recipientName,
-        creatorGender: formData.creatorGender,
-        partnerGender: formData.partnerGender,
-        relationshipStartDate: formData.relationshipStartDate,
-        passcode: formData.passcode,
-        vaultTitle: `${formData.recipientName} & ${formData.creatorName}'s Vault`,
-        subtitle: `For my love, ${formData.recipientName}`,
-        loveLetterTitle: `To My Forever & Always, ${formData.recipientName} ❤️`,
-        loveLetterBody: `${formData.recipientName}, looking back at all the memories we've built together fills my heart with so much warmth. From quiet coffee mornings to starry late-night talks, every moment with you is a gift I cherish deeply.\n\nHappy National Girlfriend's Day, my love. Here's to endless more chapters of our story.`,
-      };
-
-      const res = await fetch('/api/admin/settings', {
-        method: 'PUT',
+      const res = await fetch('/api/auth/signup', {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedSettings),
+        body: JSON.stringify(formData),
       });
       const data = await res.json();
       if (data.settings) {
         setSettings(data.settings);
       }
     } catch (err) {
-      console.error('Failed to update settings on signup:', err);
+      console.error('Failed to register user:', err);
     }
 
     setCurrentView('vault');
@@ -130,6 +116,32 @@ export default function App() {
     setShowPasscodeGate(false);
     setShowSignUpModal(false);
     setAutoPlayAudio(true);
+  };
+
+  const handleSignInSubmit = async (email: string, password: string): Promise<boolean> => {
+    try {
+      const res = await fetch('/api/auth/signin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        if (data.settings) {
+          setSettings(data.settings);
+        }
+        setCurrentView('vault');
+        setIsLocked(false);
+        setShowPasscodeGate(false);
+        setShowSignUpModal(false);
+        setAutoPlayAudio(true);
+        return true;
+      }
+      return false;
+    } catch (err) {
+      console.error('Failed to sign in:', err);
+      return false;
+    }
   };
 
   const handleVerifyPasscode = async (passcode: string): Promise<boolean> => {
@@ -354,6 +366,7 @@ export default function App() {
             isOpen={showSignUpModal}
             onClose={() => setShowSignUpModal(false)}
             onSignUp={handleSignUpSubmit}
+            onSignIn={handleSignInSubmit}
             initialCreatorName={settings.creatorName}
             initialRecipientName={settings.recipientName}
           />

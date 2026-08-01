@@ -5,10 +5,24 @@ import { Memory, Reply, VaultSettings } from '../types/index.js';
 const DATA_DIR = path.join(process.cwd(), 'data');
 const DB_FILE = path.join(DATA_DIR, 'vault_db.json');
 
+export interface UserAccount {
+  id: string;
+  email: string;
+  password: string;
+  creatorName: string;
+  recipientName: string;
+  creatorGender: string;
+  partnerGender: string;
+  relationshipStartDate: string;
+  passcode: string;
+  createdAt: string;
+}
+
 interface DatabaseSchema {
   settings: VaultSettings;
   memories: Memory[];
   replies: Reply[];
+  users: UserAccount[];
 }
 
 const DEFAULT_SETTINGS: VaultSettings = {
@@ -151,7 +165,11 @@ class VaultDatabase {
     try {
       if (fs.existsSync(DB_FILE)) {
         const raw = fs.readFileSync(DB_FILE, 'utf-8');
-        return JSON.parse(raw);
+        const parsed = JSON.parse(raw);
+        if (!parsed.users) {
+          parsed.users = [];
+        }
+        return parsed;
       }
     } catch (err) {
       console.error('Error reading vault DB file, reinitializing:', err);
@@ -161,6 +179,7 @@ class VaultDatabase {
       settings: DEFAULT_SETTINGS,
       memories: DEFAULT_MEMORIES,
       replies: DEFAULT_REPLIES,
+      users: [],
     };
     this.saveData(initialData);
     return initialData;
@@ -264,6 +283,32 @@ class VaultDatabase {
       this.saveData(this.data);
     }
     return reply;
+  }
+
+  // Users methods
+  public findUserByEmail(email: string): UserAccount | undefined {
+    const normalized = email.toLowerCase().trim();
+    return this.data.users.find((u) => u.email.toLowerCase().trim() === normalized);
+  }
+
+  public registerUser(user: Omit<UserAccount, 'id' | 'createdAt'>): UserAccount {
+    const normalizedEmail = user.email.toLowerCase().trim();
+    const existingIndex = this.data.users.findIndex((u) => u.email.toLowerCase().trim() === normalizedEmail);
+
+    const newUser: UserAccount = {
+      ...user,
+      email: normalizedEmail,
+      id: `user-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      createdAt: new Date().toISOString(),
+    };
+
+    if (existingIndex !== -1) {
+      this.data.users[existingIndex] = newUser;
+    } else {
+      this.data.users.push(newUser);
+    }
+    this.saveData(this.data);
+    return newUser;
   }
 }
 
