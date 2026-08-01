@@ -25,8 +25,15 @@ import {
   Copy,
   ExternalLink,
   Link as LinkIcon,
+  Users,
+  Calendar,
+  UserCheck,
+  KeyRound,
+  Mail,
+  Gift,
 } from 'lucide-react';
 import { Memory, Reply, VaultSettings, CaptionTone, AnimationPreset, BackgroundGradient } from '../types/index.js';
+import { UserAccount } from '../server/db.js';
 
 interface AdminDashboardProps {
   onClose: () => void;
@@ -34,12 +41,16 @@ interface AdminDashboardProps {
 }
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onRefreshVault }) => {
-  const [activeTab, setActiveTab] = useState<'memories' | 'replies' | 'settings'>('memories');
+  const [activeTab, setActiveTab] = useState<'memories' | 'replies' | 'settings' | 'users'>('memories');
 
   // State
   const [memories, setMemories] = useState<Memory[]>([]);
   const [replies, setReplies] = useState<Reply[]>([]);
   const [settings, setSettings] = useState<Partial<VaultSettings>>({});
+  const [users, setUsers] = useState<UserAccount[]>([]);
+  const [editingUser, setEditingUser] = useState<UserAccount | null>(null);
+  const [occasionTitle, setOccasionTitle] = useState<string>("National Girlfriend's Day");
+  const [occasionDay, setOccasionDay] = useState<string>('2026-08-01');
   const [loading, setLoading] = useState(true);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -61,19 +72,63 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onRefre
   const fetchAllData = async () => {
     setLoading(true);
     try {
-      const [memRes, repRes, setRes] = await Promise.all([
+      const [memRes, repRes, setRes, userRes] = await Promise.all([
         fetch('/api/admin/memories').then((r) => r.json()),
         fetch('/api/admin/replies').then((r) => r.json()),
         fetch('/api/admin/settings').then((r) => r.json()),
+        fetch('/api/admin/users').then((r) => r.json()),
       ]);
 
       setMemories(memRes.memories || []);
       setReplies(repRes.replies || []);
-      setSettings(setRes.settings || {});
+      const loadedSettings = setRes.settings || {};
+      setSettings(loadedSettings);
+      setUsers(userRes.users || []);
+
+      if (loadedSettings.occasionTitle) setOccasionTitle(loadedSettings.occasionTitle);
+      if (loadedSettings.occasionDay) setOccasionDay(loadedSettings.occasionDay);
     } catch (err) {
       console.error('Failed to load admin data:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSaveOccasion = async () => {
+    try {
+      const res = await fetch('/api/admin/occasion', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ occasionDay, occasionTitle }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast('Occasion Day updated successfully! 🎉');
+        if (data.settings) setSettings(data.settings);
+        if (data.users) setUsers(data.users);
+        onRefreshVault();
+      }
+    } catch (err) {
+      showToast('Failed to save occasion day');
+    }
+  };
+
+  const handleSaveUser = async (u: UserAccount) => {
+    try {
+      const res = await fetch(`/api/admin/users/${u.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(u),
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast(`User ${u.email} updated successfully!`);
+        setEditingUser(null);
+        fetchAllData();
+        onRefreshVault();
+      }
+    } catch (err) {
+      showToast('Failed to update user');
     }
   };
 
@@ -358,10 +413,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onRefre
         </div>
 
         {/* Tab Selector */}
-        <div className="flex border-b border-rose-500/20 bg-black/40 px-6 gap-2 shrink-0">
+        <div className="flex items-center border-b border-rose-500/20 bg-black/40 px-4 sm:px-6 gap-2 shrink-0 overflow-x-auto whitespace-nowrap scrollbar-none">
           <button
             onClick={() => setActiveTab('memories')}
-            className={`py-3 px-4 text-xs font-semibold flex items-center gap-2 border-b-2 transition-colors cursor-pointer ${
+            className={`py-3 px-4 text-xs font-semibold flex items-center gap-2 border-b-2 transition-colors cursor-pointer shrink-0 whitespace-nowrap ${
               activeTab === 'memories' ? 'border-rose-400 text-rose-300' : 'border-transparent text-rose-200/60 hover:text-white'
             }`}
           >
@@ -370,7 +425,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onRefre
 
           <button
             onClick={() => setActiveTab('replies')}
-            className={`py-3 px-4 text-xs font-semibold flex items-center gap-2 border-b-2 transition-colors cursor-pointer relative ${
+            className={`py-3 px-4 text-xs font-semibold flex items-center gap-2 border-b-2 transition-colors cursor-pointer relative shrink-0 whitespace-nowrap ${
               activeTab === 'replies' ? 'border-rose-400 text-rose-300' : 'border-transparent text-rose-200/60 hover:text-white'
             }`}
           >
@@ -384,11 +439,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onRefre
 
           <button
             onClick={() => setActiveTab('settings')}
-            className={`py-3 px-4 text-xs font-semibold flex items-center gap-2 border-b-2 transition-colors cursor-pointer ${
+            className={`py-3 px-4 text-xs font-semibold flex items-center gap-2 border-b-2 transition-colors cursor-pointer shrink-0 whitespace-nowrap ${
               activeTab === 'settings' ? 'border-rose-400 text-rose-300' : 'border-transparent text-rose-200/60 hover:text-white'
             }`}
           >
             <Settings className="w-4 h-4" /> Vault Settings
+          </button>
+
+          <button
+            onClick={() => setActiveTab('users')}
+            className={`py-3 px-4 text-xs font-semibold flex items-center gap-2 border-b-2 transition-colors cursor-pointer shrink-0 whitespace-nowrap ${
+              activeTab === 'users' ? 'border-rose-400 text-rose-300' : 'border-transparent text-rose-200/60 hover:text-white'
+            }`}
+          >
+            <Users className="w-4 h-4 text-rose-400" /> Users & Occasion
           </button>
         </div>
 
@@ -655,6 +719,184 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onRefre
                   </div>
                 </div>
               )}
+
+              {/* TAB 4: USERS & OCCASION MANAGEMENT */}
+              {activeTab === 'users' && (
+                <div className="space-y-6 max-w-3xl mx-auto">
+                  {/* OCCASION DAY FEATURED CARD */}
+                  <div className="p-6 rounded-3xl bg-gradient-to-br from-rose-950/70 via-black/80 to-rose-950/70 border border-rose-500/30 space-y-4 shadow-xl">
+                    <div className="flex items-center justify-between border-b border-rose-500/20 pb-3">
+                      <div className="flex items-center gap-2">
+                        <div className="p-2 rounded-xl bg-rose-500/20 text-rose-300">
+                          <Gift className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <h3 className="text-base font-bold text-white flex items-center gap-2">
+                            Vault Occasion Day Manager
+                          </h3>
+                          <p className="text-xs text-rose-300/80">
+                            Configure the celebration occasion (e.g., National Girlfriend&apos;s Day, Anniversary, Birthday)
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Quick Preset Selector */}
+                    <div>
+                      <label className="block text-xs font-semibold text-rose-200 mb-2">Quick Preset Occasion Selector</label>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setOccasionTitle("National Girlfriend's Day");
+                            setOccasionDay("2026-08-01");
+                          }}
+                          className={`p-2.5 rounded-xl border text-xs font-medium text-left transition-all cursor-pointer ${
+                            occasionTitle.includes("Girlfriend")
+                              ? 'bg-rose-500/30 border-rose-400 text-white shadow-md'
+                              : 'bg-black/40 border-white/10 text-rose-200/70 hover:text-white'
+                          }`}
+                        >
+                          <span className="block font-bold">💖 Girlfriend&apos;s Day</span>
+                          <span className="text-[10px] opacity-70">August 1st</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setOccasionTitle("Our Anniversary");
+                            setOccasionDay(settings.relationshipStartDate || "2023-08-01");
+                          }}
+                          className={`p-2.5 rounded-xl border text-xs font-medium text-left transition-all cursor-pointer ${
+                            occasionTitle.includes("Anniversary")
+                              ? 'bg-rose-500/30 border-rose-400 text-white shadow-md'
+                              : 'bg-black/40 border-white/10 text-rose-200/70 hover:text-white'
+                          }`}
+                        >
+                          <span className="block font-bold">💍 Relationship Anniversary</span>
+                          <span className="text-[10px] opacity-70">Anniversary Date</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setOccasionTitle("Valentine's Day");
+                            setOccasionDay("2027-02-14");
+                          }}
+                          className={`p-2.5 rounded-xl border text-xs font-medium text-left transition-all cursor-pointer ${
+                            occasionTitle.includes("Valentine")
+                              ? 'bg-rose-500/30 border-rose-400 text-white shadow-md'
+                              : 'bg-black/40 border-white/10 text-rose-200/70 hover:text-white'
+                          }`}
+                        >
+                          <span className="block font-bold">🌹 Valentine&apos;s Day</span>
+                          <span className="text-[10px] opacity-70">February 14th</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setOccasionTitle("Her Birthday");
+                            setOccasionDay("2026-09-15");
+                          }}
+                          className={`p-2.5 rounded-xl border text-xs font-medium text-left transition-all cursor-pointer ${
+                            occasionTitle.includes("Birthday")
+                              ? 'bg-rose-500/30 border-rose-400 text-white shadow-md'
+                              : 'bg-black/40 border-white/10 text-rose-200/70 hover:text-white'
+                          }`}
+                        >
+                          <span className="block font-bold">🎂 Her Birthday</span>
+                          <span className="text-[10px] opacity-70">Birthday Date</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Inputs */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                      <div>
+                        <label className="block text-xs font-medium text-rose-300 mb-1">Occasion Title / Name</label>
+                        <input
+                          type="text"
+                          value={occasionTitle}
+                          onChange={(e) => setOccasionTitle(e.target.value)}
+                          placeholder="e.g. National Girlfriend's Day"
+                          className="w-full px-3 py-2 rounded-xl bg-black/50 border border-rose-500/30 text-white text-xs focus:outline-none focus:border-rose-400"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-medium text-rose-300 mb-1">Occasion Date / Celebration Day</label>
+                        <input
+                          type="date"
+                          value={occasionDay}
+                          onChange={(e) => setOccasionDay(e.target.value)}
+                          className="w-full px-3 py-2 rounded-xl bg-black/50 border border-rose-500/30 text-white text-xs focus:outline-none focus:border-rose-400"
+                        />
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={handleSaveOccasion}
+                      className="w-full py-3 rounded-xl bg-gradient-to-r from-rose-500 via-pink-500 to-rose-600 hover:from-rose-600 hover:to-pink-600 text-white text-xs font-bold shadow-lg shadow-rose-500/30 flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-95 border border-rose-300/30"
+                    >
+                      <Save className="w-4 h-4 text-amber-300" /> Save Occasion Day & Title
+                    </button>
+                  </div>
+
+                  {/* REGISTERED USERS MANAGEMENT */}
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-semibold text-rose-200 uppercase tracking-wider flex items-center gap-2">
+                        <Users className="w-4 h-4 text-rose-400" /> Registered Vault User Accounts ({users.length})
+                      </h3>
+                    </div>
+
+                    {users.length === 0 ? (
+                      <div className="p-8 text-center text-rose-300/60 bg-white/5 rounded-2xl border border-white/10">
+                        <UserCheck className="w-8 h-8 mx-auto mb-2 opacity-40" />
+                        <p className="text-sm">No registered user accounts found yet. Users who sign up will appear here.</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {users.map((u) => (
+                          <div
+                            key={u.id}
+                            className="p-5 rounded-2xl bg-white/5 border border-rose-500/20 hover:border-rose-400/40 transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-rose-500 to-pink-500 flex items-center justify-center text-white font-bold text-lg shadow-md shrink-0">
+                                {u.creatorName ? u.creatorName[0].toUpperCase() : 'U'}
+                              </div>
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <p className="text-sm font-bold text-white">{u.email}</p>
+                                  <span className="text-[10px] bg-rose-500/20 text-rose-300 px-2 py-0.5 rounded-full font-mono">
+                                    PIN: {u.passcode || '0801'}
+                                  </span>
+                                </div>
+                                <p className="text-xs text-rose-300/80 mt-0.5">
+                                  Couple: <span className="text-white font-medium">{u.creatorName || 'Alex'}</span> ❤️ <span className="text-white font-medium">{u.recipientName || 'Elena'}</span>
+                                </p>
+                                <p className="text-[11px] text-rose-400/70 mt-0.5 flex items-center gap-2">
+                                  <span>Start Date: {u.relationshipStartDate}</span>
+                                  {u.occasionDay && <span>• Occasion: {u.occasionDay}</span>}
+                                </p>
+                              </div>
+                            </div>
+
+                            <button
+                              onClick={() => setEditingUser(u)}
+                              className="px-3.5 py-2 rounded-xl bg-rose-500/20 hover:bg-rose-500/40 text-rose-200 text-xs font-semibold flex items-center gap-1.5 cursor-pointer border border-rose-500/30 transition-all active:scale-95"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" /> Edit Account & Occasion
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </>
           )}
         </div>
@@ -900,6 +1142,119 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onRefre
                   className="px-5 py-2 rounded-xl bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 text-xs font-bold shadow-md cursor-pointer flex items-center gap-1.5"
                 >
                   <Save className="w-3.5 h-3.5" /> Save Memory
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* EDIT USER ACCOUNT MODAL */}
+      <AnimatePresence>
+        {editingUser && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-2xl"
+          >
+            <motion.div
+              initial={{ scale: 0.9 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.9 }}
+              className="w-full max-w-md glass-card-dark p-6 rounded-3xl border border-rose-500/30 text-white space-y-4 shadow-2xl"
+            >
+              <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                <h3 className="text-base font-bold text-white flex items-center gap-2">
+                  <UserCheck className="w-4 h-4 text-rose-400" /> Edit User Account
+                </h3>
+                <button
+                  onClick={() => setEditingUser(null)}
+                  className="p-1 rounded-full hover:bg-white/10 cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="space-y-3 text-xs">
+                <div>
+                  <label className="block text-rose-300 mb-1 font-medium">Email Address</label>
+                  <input
+                    type="email"
+                    disabled
+                    value={editingUser.email}
+                    className="w-full px-3 py-2 rounded-xl bg-black/60 border border-white/10 text-white/60 cursor-not-allowed"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-rose-300 mb-1 font-medium">Creator Name</label>
+                    <input
+                      type="text"
+                      value={editingUser.creatorName || ''}
+                      onChange={(e) => setEditingUser({ ...editingUser, creatorName: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl bg-black/40 border border-white/10 text-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-rose-300 mb-1 font-medium">Partner Name</label>
+                    <input
+                      type="text"
+                      value={editingUser.recipientName || ''}
+                      onChange={(e) => setEditingUser({ ...editingUser, recipientName: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl bg-black/40 border border-white/10 text-white"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-rose-300 mb-1 font-medium">Relationship Start Date</label>
+                    <input
+                      type="date"
+                      value={editingUser.relationshipStartDate || ''}
+                      onChange={(e) => setEditingUser({ ...editingUser, relationshipStartDate: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl bg-black/40 border border-white/10 text-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-rose-300 mb-1 font-medium">4-Digit Passcode PIN</label>
+                    <input
+                      type="text"
+                      maxLength={4}
+                      value={editingUser.passcode || ''}
+                      onChange={(e) => setEditingUser({ ...editingUser, passcode: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl bg-black/40 border border-white/10 text-white font-mono"
+                    />
+                  </div>
+                </div>
+
+                <div className="p-3 rounded-2xl bg-rose-950/40 border border-rose-500/20 space-y-2">
+                  <label className="block text-rose-200 font-bold">Occasion Day Celebration</label>
+                  <input
+                    type="date"
+                    value={editingUser.occasionDay || occasionDay || ''}
+                    onChange={(e) => setEditingUser({ ...editingUser, occasionDay: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-black/60 border border-rose-500/30 text-white text-xs"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-4 border-t border-white/10">
+                <button
+                  onClick={() => setEditingUser(null)}
+                  className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-semibold cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => handleSaveUser(editingUser)}
+                  className="px-5 py-2 rounded-xl bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 text-xs font-bold shadow-md cursor-pointer flex items-center gap-1.5"
+                >
+                  <Save className="w-3.5 h-3.5" /> Save User Account
                 </button>
               </div>
             </motion.div>

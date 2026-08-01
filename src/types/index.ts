@@ -71,6 +71,8 @@ export interface VaultSettings {
   soundtrackTitle?: string;
   soundtrackArtist?: string;
   themeColor: 'rose' | 'twilight' | 'champagne' | 'midnight';
+  occasionDay?: string;
+  occasionTitle?: string;
 }
 
 export interface AICaptionRequest {

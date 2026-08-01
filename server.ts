@@ -229,6 +229,70 @@ app.patch('/api/admin/replies/:id/read', (req, res) => {
   res.json({ reply });
 });
 
+// Get all users for admin studio
+app.get('/api/admin/users', (req, res) => {
+  const users = db.getAllUsers();
+  res.json({ users });
+});
+
+// Update user details (including occasion day) in admin studio
+app.put('/api/admin/users/:id', (req, res) => {
+  const { id } = req.params;
+  const {
+    creatorName,
+    recipientName,
+    creatorGender,
+    partnerGender,
+    relationshipStartDate,
+    passcode,
+    occasionDay,
+    occasionTitle,
+  } = req.body;
+
+  const updatedUser = db.updateUser(id, {
+    creatorName,
+    recipientName,
+    creatorGender,
+    partnerGender,
+    relationshipStartDate,
+    passcode,
+    occasionDay,
+    occasionTitle,
+  });
+
+  // Sync settings with updated user info
+  const updatedSettings = db.updateSettings({
+    ...(creatorName && { creatorName }),
+    ...(recipientName && { recipientName }),
+    ...(creatorGender && { creatorGender }),
+    ...(partnerGender && { partnerGender }),
+    ...(relationshipStartDate && { relationshipStartDate }),
+    ...(passcode && { passcode }),
+    ...(occasionDay !== undefined && { occasionDay }),
+    ...(occasionTitle !== undefined && { occasionTitle }),
+  });
+
+  res.json({ success: true, user: updatedUser, settings: updatedSettings });
+});
+
+// Update occasion day directly
+app.put('/api/admin/occasion', (req, res) => {
+  const { occasionDay, occasionTitle } = req.body;
+
+  const updatedSettings = db.updateSettings({
+    occasionDay,
+    occasionTitle,
+  });
+
+  // Update occasionDay on all registered users as well
+  const users = db.getAllUsers();
+  users.forEach((u) => {
+    db.updateUser(u.id, { occasionDay, occasionTitle });
+  });
+
+  res.json({ success: true, settings: updatedSettings, users: db.getAllUsers() });
+});
+
 // AI Caption Studio generation endpoint using Gemini API
 app.post('/api/admin/ai/caption', async (req, res) => {
   const { title, tone, details, mediaType } = req.body;

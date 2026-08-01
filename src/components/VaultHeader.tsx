@@ -70,11 +70,8 @@ export const VaultHeader: React.FC<VaultHeaderProps> = ({
               <Heart className="w-3.5 h-3.5 fill-rose-500 animate-pulse" />
             </div>
             <div>
-              <h1 className="text-xs font-bold text-slate-800 dark:text-slate-100 tracking-tight flex items-center gap-1">
-                {vaultTitle || 'Our Story'}{' '}
-                <span className="text-[10px] text-rose-500 font-medium px-1.5 py-0.2 bg-rose-100 dark:bg-rose-950/60 rounded-full">
-                  Vault
-                </span>
+              <h1 className="text-xs font-black text-slate-800 dark:text-slate-100 tracking-wider uppercase flex items-center gap-1">
+                OUR <Heart className="w-3.5 h-3.5 fill-rose-500 text-rose-500 animate-pulse inline-block" /> STORY VAULT
               </h1>
             </div>
           </motion.div>

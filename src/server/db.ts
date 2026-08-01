@@ -15,6 +15,8 @@ export interface UserAccount {
   partnerGender: string;
   relationshipStartDate: string;
   passcode: string;
+  occasionDay?: string;
+  occasionTitle?: string;
   createdAt: string;
 }
 
@@ -39,6 +41,8 @@ const DEFAULT_SETTINGS: VaultSettings = {
   soundtrackTitle: 'A Thousand Silent Moments',
   soundtrackArtist: 'Romantic Piano Solo',
   themeColor: 'rose',
+  occasionDay: '2026-08-01',
+  occasionTitle: "National Girlfriend's Day",
 };
 
 const DEFAULT_MEMORIES: Memory[] = [
@@ -309,6 +313,20 @@ class VaultDatabase {
     }
     this.saveData(this.data);
     return newUser;
+  }
+
+  public getAllUsers(): UserAccount[] {
+    return this.data.users || [];
+  }
+
+  public updateUser(id: string, updates: Partial<UserAccount>): UserAccount | undefined {
+    const userIdx = this.data.users.findIndex((u) => u.id === id);
+    if (userIdx !== -1) {
+      this.data.users[userIdx] = { ...this.data.users[userIdx], ...updates };
+      this.saveData(this.data);
+      return this.data.users[userIdx];
+    }
+    return undefined;
   }
 }
 

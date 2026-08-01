@@ -7,6 +7,8 @@ interface HeroSectionProps {
   creatorName: string;
   subtitle?: string;
   startDateStr: string; // YYYY-MM-DD
+  occasionTitle?: string;
+  occasionDay?: string;
 }
 
 interface TimeTogether {
@@ -19,8 +21,10 @@ interface TimeTogether {
 export const HeroSection: React.FC<HeroSectionProps> = ({
   recipientName = 'Elena',
   creatorName = 'Alex',
-  subtitle = "A National Girlfriend's Day Memory Vault",
+  subtitle = "A Special Memory Vault",
   startDateStr = '2023-08-01',
+  occasionTitle = "National Girlfriend's Day",
+  occasionDay,
 }) => {
   const [timeTogether, setTimeTogether] = useState<TimeTogether>({ days: 0, hours: 0, minutes: 0, seconds: 0 });
 
@@ -63,7 +67,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
         transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
         className="relative z-10 max-w-2xl mx-auto space-y-8"
       >
-        {/* Girlfriend's Day Badge */}
+        {/* Girlfriend's Day / Special Occasion Badge */}
         <motion.div
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
@@ -71,14 +75,14 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass-pill border border-rose-300/40 text-rose-600 dark:text-rose-300 text-xs font-medium shadow-sm"
         >
           <Sparkles className="w-3.5 h-3.5 text-rose-400" />
-          <span>National Girlfriend&apos;s Day Special Edition</span>
+          <span>{occasionTitle} Special Edition</span>
           <Heart className="w-3.5 h-3.5 text-rose-500 fill-rose-500" />
         </motion.div>
 
         {/* Heading */}
         <div className="space-y-4">
           <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight text-slate-900 dark:text-white leading-[1.15]">
-            Happy Girlfriend&apos;s Day, <br />
+            Happy {occasionTitle ? occasionTitle.replace(/^Happy\s+/i, '') : "Girlfriend's Day"}, <br />
             <span className="bg-gradient-to-r from-rose-500 via-pink-500 to-rose-400 bg-clip-text text-transparent">
               {recipientName || 'My Love'}
             </span>

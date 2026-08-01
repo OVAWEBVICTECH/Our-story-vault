@@ -244,6 +244,8 @@ export default function App() {
                   creatorName={settings.creatorName || 'Alex'}
                   subtitle={settings.subtitle}
                   startDateStr={settings.relationshipStartDate || '2023-08-01'}
+                  occasionTitle={settings.occasionTitle}
+                  occasionDay={settings.occasionDay}
                 />
 
                 {/* Timeline Section */}
