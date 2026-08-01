@@ -6,9 +6,10 @@ interface PasscodeGateProps {
   recipientName: string;
   onVerify: (passcode: string) => Promise<boolean>;
   isOpen: boolean;
+  onCreateVault?: () => void;
 }
 
-export const PasscodeGate: React.FC<PasscodeGateProps> = ({ recipientName, onVerify }) => {
+export const PasscodeGate: React.FC<PasscodeGateProps> = ({ recipientName, onVerify, onCreateVault }) => {
   const [pin, setPin] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isUnlocking, setIsUnlocking] = useState(false);
@@ -150,6 +151,23 @@ export const PasscodeGate: React.FC<PasscodeGateProps> = ({ recipientName, onVer
                 </p>
                 Default anniversary code is <span className="font-mono text-white font-bold bg-white/10 px-1.5 py-0.5 rounded">0801</span> (August 1st)
               </motion.div>
+            )}
+
+            {/* Create Your Own Vault Section */}
+            {onCreateVault && (
+              <div className="pt-4 mt-2 border-t border-rose-500/20 space-y-2">
+                <p className="text-[11px] text-rose-300/80 font-light">
+                  Want to make a personalized memory vault for your own babe?
+                </p>
+                <button
+                  type="button"
+                  onClick={onCreateVault}
+                  className="w-full py-2.5 px-4 rounded-2xl bg-gradient-to-r from-rose-500 via-pink-500 to-rose-600 hover:from-rose-600 hover:to-pink-600 text-white text-xs font-bold shadow-lg shadow-rose-500/30 flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-95 border border-rose-300/30"
+                >
+                  <Sparkles className="w-4 h-4 text-amber-300 animate-pulse" />
+                  <span>Create Your Own Vault</span>
+                </button>
+              </div>
             )}
           </div>
         </motion.div>

@@ -21,6 +21,10 @@ import {
   Check,
   RefreshCw,
   Upload,
+  Share2,
+  Copy,
+  ExternalLink,
+  Link as LinkIcon,
 } from 'lucide-react';
 import { Memory, Reply, VaultSettings, CaptionTone, AnimationPreset, BackgroundGradient } from '../types/index.js';
 
@@ -258,6 +262,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onRefre
     }
   };
 
+  const handleCopyShareLink = () => {
+    const shareUrl = window.location.origin;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(shareUrl).then(
+        () => showToast('Shareable Vault link copied to clipboard! Send it to your babe ❤️'),
+        () => showToast(`Link: ${shareUrl}`)
+      );
+    } else {
+      showToast(`Shareable Link: ${shareUrl}`);
+    }
+  };
+
   // =========================================
   // REPLIES HANDLER
   // =========================================
@@ -308,11 +324,36 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose, onRefre
             </div>
           </div>
 
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleCopyShareLink}
+              className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 text-white text-xs font-bold shadow-md flex items-center gap-1.5 cursor-pointer transition-all active:scale-95 border border-rose-300/30"
+            >
+              <Share2 className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Share Vault Link</span>
+            </button>
+            <button
+              onClick={onClose}
+              className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-rose-200 transition-colors cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+
+        {/* Shareable Link Quick Bar */}
+        <div className="bg-gradient-to-r from-rose-900/60 via-pink-900/40 to-rose-900/60 px-4 sm:px-6 py-2 border-b border-rose-500/20 flex flex-col sm:flex-row items-center justify-between gap-2 shrink-0 text-xs">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-3.5 h-3.5 text-amber-300 animate-pulse shrink-0" />
+            <span className="text-rose-200">
+              Vault Link: <code className="bg-black/60 px-2 py-0.5 rounded text-rose-300 font-mono text-[11px] border border-rose-500/30">{typeof window !== 'undefined' ? window.location.origin : ''}</code>
+            </span>
+          </div>
           <button
-            onClick={onClose}
-            className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-rose-200 transition-colors cursor-pointer"
+            onClick={handleCopyShareLink}
+            className="text-xs text-rose-300 hover:text-white flex items-center gap-1 font-semibold underline cursor-pointer"
           >
-            <X className="w-5 h-5" />
+            <Copy className="w-3 h-3" /> Copy Link to Clipboard
           </button>
         </div>
 

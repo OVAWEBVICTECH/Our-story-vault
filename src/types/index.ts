@@ -59,6 +59,8 @@ export interface VaultSettings {
   vaultSlug: string;
   recipientName: string;
   creatorName: string;
+  creatorGender?: string;
+  partnerGender?: string;
   relationshipStartDate: string; // e.g., '2023-08-01'
   passcode?: string; // Optional passcode for private access
   vaultTitle: string;
