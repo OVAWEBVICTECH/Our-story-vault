@@ -1,0 +1,6 @@
+{
+  "name": "Our Story – Interactive Memory Vault",
+  "description": "A private digital memory vault for National Girlfriend's Day featuring an interactive timeline journey, romantic soundtrack player, AI caption studio, and interactive reply envelope.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
