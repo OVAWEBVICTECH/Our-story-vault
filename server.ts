@@ -275,13 +275,97 @@ app.put('/api/admin/users/:id', (req, res) => {
   res.json({ success: true, user: updatedUser, settings: updatedSettings });
 });
 
-// Update occasion day directly
-app.put('/api/admin/occasion', (req, res) => {
+// Helper to generate wax seal love letter using Gemini AI based on occasion
+async function generateLoveLetterForOccasion(
+  occasionTitle: string = "National Girlfriend's Day",
+  occasionDay: string = '2026-08-01',
+  recipientName: string = 'Elena',
+  creatorName: string = 'Alex'
+): Promise<{ title: string; body: string }> {
+  const defaultTitle = `To My Forever Love, ${recipientName}`;
+  const defaultBody = `My Dearest ${recipientName},
+
+On this special ${occasionTitle} (${occasionDay}), I want to take a quiet moment to tell you how truly deeply I love you. From the day our story began, every single moment shared with you has felt like a divine blessing crafted just for us.
+
+You are my sunshine on dark days, my favorite song, and my forever safe haven. My heartfelt prayer for you today and every single day is that your life is filled with unshakeable peace, overflowing joy, divine protection, and endless love. May every step you take be blessed with grace, and may that gorgeous smile of yours never fade.
+
+If loving you were a crime, I'd willingly serve a lifetime sentence without parole. They say nobody is perfect, but then I looked into your eyes and realized they clearly haven't met you yet!
+
+Thank you for choosing me to walk this beautiful path beside you. Today, tomorrow, and for all our years to come, my heart belongs completely to you.
+
+Forever and always yours,
+${creatorName}`;
+
+  const ai = getGeminiClient();
+  if (!ai) {
+    return { title: defaultTitle, body: defaultBody };
+  }
+
+  try {
+    const prompt = `Write a deeply moving, romantic love letter for a wax-sealed envelope in a digital memory vault.
+Occasion: "${occasionTitle}" (Date/Day: ${occasionDay})
+Recipient Name: "${recipientName}"
+Sender Name: "${creatorName}"
+
+Instructions:
+1. Make it custom tailored to "${occasionTitle}" (${occasionDay}).
+2. Combine sweet words of affection, heartfelt prayer & blessings ("prayer punching" for her joy, peace, health, & protection), and 1-2 witty, romantic pickup lines woven in naturally.
+3. Write with warm emotional depth, charm, and authenticity.
+4. Keep it to around 150-250 words formatted into 4 readable paragraphs suitable for a wax-sealed love letter.
+5. Address it to "${recipientName}" and sign off from "${creatorName}".
+6. Return a short romantic letter title and the message body.
+
+Return JSON format:
+{
+  "title": "Short romantic title",
+  "body": "Full love letter text"
+}`;
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-3.6-flash',
+      contents: prompt,
+      config: {
+        responseMimeType: 'application/json',
+      },
+    });
+
+    if (response.text) {
+      const parsed = JSON.parse(response.text);
+      if (parsed.body) {
+        return {
+          title: parsed.title || defaultTitle,
+          body: parsed.body,
+        };
+      }
+    }
+  } catch (err) {
+    console.error('Failed to auto-generate AI love letter:', err);
+  }
+
+  return { title: defaultTitle, body: defaultBody };
+}
+
+// Update occasion day directly & auto-generate wax seal love letter
+app.put('/api/admin/occasion', async (req, res) => {
   const { occasionDay, occasionTitle } = req.body;
+
+  const currentSettings = db.getSettings();
+  const recipientName = currentSettings.recipientName || 'Elena';
+  const creatorName = currentSettings.creatorName || 'Alex';
+
+  // Auto-generate love letter tailored to the new occasion
+  const generatedLetter = await generateLoveLetterForOccasion(
+    occasionTitle || "National Girlfriend's Day",
+    occasionDay || '2026-08-01',
+    recipientName,
+    creatorName
+  );
 
   const updatedSettings = db.updateSettings({
     occasionDay,
     occasionTitle,
+    loveLetterTitle: generatedLetter.title,
+    loveLetterBody: generatedLetter.body,
   });
 
   // Update occasionDay on all registered users as well
@@ -291,6 +375,20 @@ app.put('/api/admin/occasion', (req, res) => {
   });
 
   res.json({ success: true, settings: updatedSettings, users: db.getAllUsers() });
+});
+
+// Endpoint to manually AI auto-generate love letter matching occasion
+app.post('/api/admin/ai/loveletter', async (req, res) => {
+  const { occasionTitle, occasionDay, recipientName, creatorName } = req.body;
+
+  const currentSettings = db.getSettings();
+  const rName = recipientName || currentSettings.recipientName || 'Elena';
+  const cName = creatorName || currentSettings.creatorName || 'Alex';
+  const oTitle = occasionTitle || currentSettings.occasionTitle || "National Girlfriend's Day";
+  const oDay = occasionDay || currentSettings.occasionDay || '2026-08-01';
+
+  const letter = await generateLoveLetterForOccasion(oTitle, oDay, rName, cName);
+  res.json({ success: true, letter });
 });
 
 // AI Caption Studio generation endpoint using Gemini API
