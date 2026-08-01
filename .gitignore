@@ -6,3 +6,6 @@ coverage/
 *.log
 .env*
 !.env.example
+
+# Ignore local Firebase config with secrets
+firebase-applet-config.local.json
