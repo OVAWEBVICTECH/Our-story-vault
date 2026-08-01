@@ -1,0 +1,4 @@
+{
+  "removed": true,
+  "note": "Sensitive Firebase configuration removed from repository. Use firebase-applet-config.example.json or environment variables/secret manager. Rotate exposed keys and rewrite history to fully purge secrets."
+}
