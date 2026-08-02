@@ -3,6 +3,7 @@ import path from 'path';
 import { createServer as createViteServer } from 'vite';
 import { GoogleGenAI } from '@google/genai';
 import { db } from './src/server/db.js';
+import { getFirebaseConfig } from './src/server/firebaseConfig.js';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -301,6 +302,11 @@ app.put('/api/admin/users/:id', (req, res) => {
 app.get('/api/admin/credentials', (req, res) => {
   const creds = db.getAdminCredentials();
   res.json({ email: creds.email });
+});
+
+// Get Firebase configuration dynamically (supports env vars for Vercel)
+app.get('/api/firebase-config', (req, res) => {
+  res.json(getFirebaseConfig());
 });
 
 // Update System Admin credentials (email and password)

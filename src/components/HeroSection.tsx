@@ -18,6 +18,19 @@ interface TimeTogether {
   seconds: number;
 }
 
+function getCalculatedTime(startDateStr: string): TimeTogether {
+  const start = new Date(startDateStr).getTime();
+  const now = new Date().getTime();
+  const diff = Math.max(0, now - start);
+
+  const seconds = Math.floor((diff / 1000) % 60);
+  const minutes = Math.floor((diff / (1000 * 60)) % 60);
+  const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+
+  return { days, hours, minutes, seconds };
+}
+
 export const HeroSection: React.FC<HeroSectionProps> = ({
   recipientName = 'Elena',
   creatorName = 'Alex',
@@ -26,20 +39,11 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
   occasionTitle = "National Girlfriend's Day",
   occasionDay,
 }) => {
-  const [timeTogether, setTimeTogether] = useState<TimeTogether>({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+  const [timeTogether, setTimeTogether] = useState<TimeTogether>(() => getCalculatedTime(startDateStr));
 
   useEffect(() => {
     const calculateTime = () => {
-      const start = new Date(startDateStr).getTime();
-      const now = new Date().getTime();
-      const diff = Math.max(0, now - start);
-
-      const seconds = Math.floor((diff / 1000) % 60);
-      const minutes = Math.floor((diff / (1000 * 60)) % 60);
-      const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
-      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-
-      setTimeTogether({ days, hours, minutes, seconds });
+      setTimeTogether(getCalculatedTime(startDateStr));
     };
 
     calculateTime();

@@ -10,20 +10,17 @@ interface Heart {
   opacity: number;
 }
 
-export const FloatingHearts: React.FC = () => {
-  const [hearts, setHearts] = useState<Heart[]>([]);
-
-  useEffect(() => {
-    const generatedHearts: Heart[] = Array.from({ length: 16 }).map((_, i) => ({
+export const FloatingHearts: React.FC = React.memo(() => {
+  const [hearts] = useState<Heart[]>(() =>
+    Array.from({ length: 16 }).map((_, i) => ({
       id: i,
       x: Math.random() * 96,
       size: Math.floor(Math.random() * 16) + 12, // 12px to 28px
       duration: Math.random() * 12 + 10, // 10s to 22s
       delay: Math.random() * 8,
       opacity: Math.random() * 0.4 + 0.2,
-    }));
-    setHearts(generatedHearts);
-  }, []);
+    }))
+  );
 
   return (
     <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
@@ -55,4 +52,4 @@ export const FloatingHearts: React.FC = () => {
       ))}
     </div>
   );
-};
+});
